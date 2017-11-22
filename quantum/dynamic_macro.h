@@ -87,7 +87,7 @@ void dynamic_macro_record_start(
  *
  * @param macro_buffer[in] The beginning of the macro buffer being played.
  * @param macro_end[in]    The element after the last macro buffer element.
- * @param direction[in]    Either +1 or -1, which way to iterate the buffer.
+ * @param direction[in]    Either MACRO_DIRECTION_LEFT or MACRO_DIRECTION_RIGHT, which way to iterate the buffer.
  */
 void dynamic_macro_play(
     keyrecord_t *macro_buffer, keyrecord_t *macro_end, int8_t direction)
@@ -115,7 +115,7 @@ void dynamic_macro_play(
  * @param macro_buffer[in] The start of the used macro buffer.
  * @param macro_pointer[in,out] The current buffer position.
  * @param macro2_end[in] The end of the other macro.
- * @param direction[in]  Either +1 or -1, which way to iterate the buffer.
+ * @param direction[in]  Either MACRO_DIRECTION_LEFT or MACRO_DIRECTION_RIGHT, which way to iterate the buffer.
  * @param record[in]     The current keypress.
  */
 void dynamic_macro_record_key(
@@ -181,6 +181,11 @@ enum {
   MACRO_STATE_READY = 0,
   MACRO_STATE_RECORD_L,
   MACRO_STATE_RECORD_R
+};
+
+enum {
+    MACRO_DIRECTION_LEFT = 1,
+    MACRO_DIRECTION_RIGHT = -1,
 };
 
 /* Handle the key events related to the dynamic macros. Should be
@@ -254,10 +259,10 @@ bool process_record_dynamic_macro(uint16_t keycode, keyrecord_t *record)
                 macro_state = MACRO_STATE_RECORD_R;
                 return false;
             case DYN_MACRO_PLAY1:
-                dynamic_macro_play(macro_buffer, macro_end, +1);
+                dynamic_macro_play(macro_buffer, macro_end, MACRO_DIRECTION_LEFT);
                 return false;
             case DYN_MACRO_PLAY2:
-                dynamic_macro_play(r_macro_buffer, r_macro_end, -1);
+                dynamic_macro_play(r_macro_buffer, r_macro_end, MACRO_DIRECTION_RIGHT);
                 return false;
             }
         }
@@ -271,10 +276,10 @@ bool process_record_dynamic_macro(uint16_t keycode, keyrecord_t *record)
                                           * starts. */
                 switch (macro_state) {
                 case MACRO_STATE_RECORD_L:
-                    dynamic_macro_record_end(macro_buffer, macro_pointer, +1, &macro_end);
+                    dynamic_macro_record_end(macro_buffer, macro_pointer, MACRO_DIRECTION_LEFT, &macro_end);
                     break;
                 case MACRO_STATE_RECORD_R:
-                    dynamic_macro_record_end(r_macro_buffer, macro_pointer, -1, &r_macro_end);
+                    dynamic_macro_record_end(r_macro_buffer, macro_pointer, MACRO_DIRECTION_RIGHT, &r_macro_end);
                     break;
                 }
                 macro_state = MACRO_STATE_READY;
@@ -288,10 +293,10 @@ bool process_record_dynamic_macro(uint16_t keycode, keyrecord_t *record)
             /* Store the key in the macro buffer and process it normally. */
             switch (macro_state) {
             case MACRO_STATE_RECORD_L:
-                dynamic_macro_record_key(macro_buffer, &macro_pointer, r_macro_end, +1, record);
+                dynamic_macro_record_key(macro_buffer, &macro_pointer, r_macro_end, MACRO_DIRECTION_LEFT, record);
                 break;
             case MACRO_STATE_RECORD_R:
-                dynamic_macro_record_key(r_macro_buffer, &macro_pointer, macro_end, -1, record);
+                dynamic_macro_record_key(r_macro_buffer, &macro_pointer, macro_end, MACRO_DIRECTION_RIGHT, record);
                 break;
             }
             return true;
