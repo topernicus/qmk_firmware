@@ -178,9 +178,9 @@ void dynamic_macro_record_end(
 }
 
 enum {
-  READY = 0,
-  RECORD1,
-  RECORD2
+  MACRO_STATE_READY = 0,
+  MACRO_STATE_RECORD_L,
+  MACRO_STATE_RECORD_R
 };
 
 /* Handle the key events related to the dynamic macros. Should be
@@ -239,19 +239,19 @@ bool process_record_dynamic_macro(uint16_t keycode, keyrecord_t *record)
 
     /* 0   - no macro is being recorded right now
      * 1,2 - either macro 1 or 2 is being recorded */
-    static uint8_t macro_state = READY;
+    static uint8_t macro_state = MACRO_STATE_READY;
 
-    if (macro_state == READY) {
+    if (macro_state == MACRO_STATE_READY) {
         /* No macro recording in progress. */
         if (!record->event.pressed) {
             switch (keycode) {
             case DYN_REC_START1:
                 dynamic_macro_record_start(&macro_pointer, macro_buffer);
-                macro_state = RECORD1;
+                macro_state = MACRO_STATE_RECORD_L;
                 return false;
             case DYN_REC_START2:
                 dynamic_macro_record_start(&macro_pointer, r_macro_buffer);
-                macro_state = RECORD2;
+                macro_state = MACRO_STATE_RECORD_R;
                 return false;
             case DYN_MACRO_PLAY1:
                 dynamic_macro_play(macro_buffer, macro_end, +1);
@@ -270,14 +270,14 @@ bool process_record_dynamic_macro(uint16_t keycode, keyrecord_t *record)
                                           * just after the recoding
                                           * starts. */
                 switch (macro_state) {
-                case RECORD1:
+                case MACRO_STATE_RECORD_L:
                     dynamic_macro_record_end(macro_buffer, macro_pointer, +1, &macro_end);
                     break;
-                case RECORD2:
+                case MACRO_STATE_RECORD_R:
                     dynamic_macro_record_end(r_macro_buffer, macro_pointer, -1, &r_macro_end);
                     break;
                 }
-                macro_state = READY;
+                macro_state = MACRO_STATE_READY;
             }
             return false;
         case DYN_MACRO_PLAY1:
@@ -287,10 +287,10 @@ bool process_record_dynamic_macro(uint16_t keycode, keyrecord_t *record)
         default:
             /* Store the key in the macro buffer and process it normally. */
             switch (macro_state) {
-            case RECORD1:
+            case MACRO_STATE_RECORD_L:
                 dynamic_macro_record_key(macro_buffer, &macro_pointer, r_macro_end, +1, record);
                 break;
-            case RECORD2:
+            case MACRO_STATE_RECORD_R:
                 dynamic_macro_record_key(r_macro_buffer, &macro_pointer, macro_end, -1, record);
                 break;
             }
