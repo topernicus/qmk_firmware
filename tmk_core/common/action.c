@@ -132,15 +132,21 @@ bool process_record_quantum(keyrecord_t *record) {
     return true;
 }
 
+__attribute__ ((weak))
+void process_record_after(keyrecord_t *record) {
+}
+
 void process_record(keyrecord_t *record)
 {
     if (IS_NOEVENT(record->event)) { return; }
 
     if(!process_record_quantum(record)) {
+        process_record_after(record);
         return;
     }
 
     process_record_system(record);
+    process_record_after(record);
 }
 
 void process_record_system(keyrecord_t *record) {
