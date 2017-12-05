@@ -14,62 +14,41 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "xd75.h"
+#include "rgblight.h"
+#include <util/delay.h>
+#include "keymap.h"
 
-#ifdef IS_COLINTA
-#include "secrets.h"
-#else
-#define SENDSTRING_MM0 ""
-#define SENDSTRING_MM1 ""
-#define SENDSTRING_MM2 ""
-#endif
+enum my_keycodes {
+    // sticky keys
+    STK_CTL = SAFE_RANGE,
+    STK_ALT,
+    STK_SHFT,
+    STK_GUI,
 
-// layers:
-// - colemak,
-// - record-mode (adds stop buttons)
-// - qwerty
-// - fn (recording, changing layers)
-#define LAYER_COLEMAK 0
-#define LAYER_RECORD 1
-#define LAYER_QWERTY 2
-#define LAYER_FN 3
-
-// custom keys:
-// - goto layer keys
-#define GOTO_FN TT(LAYER_FN)
-#define GOTO_CM TO(LAYER_COLEMAK)
-#define GOTO_QW TO(LAYER_QWERTY)
-// - sticky keys, aka one-shot
-#define OSCTL OSM(MOD_LCTL)
-#define OSALT OSM(MOD_LALT)
-#define OSSFT OSM(MOD_LSFT)
-#define OSGUI OSM(MOD_LGUI)
-// "MMENU" is a macro for "CMD+SPC" (aka Spotlight/Alfred)
-#define MMENU LGUI(KC_SPC)
-#define _____ KC_TRNS
-#define MM_0 DYN_MACRO_PLAY1
-#define MM_1 DYN_MACRO_PLAY2
-
-// tap-hold settings
-#define LONGPRESS_DELAY 250
-#define TH_EVENTS_COUNT 13
-
-enum my_keycods {
-    TH_M0 = SAFE_RANGE,
+    // media tap/hold buttons
+    TH_M0,
     TH_M1,
     TH_M2,
-    TH_F1,
-    TH_F2,
-    TH_F3,
-    TH_F4,
-    TH_F5,
-    TH_F6,
-    TH_F7,
-    TH_F8,
-    TH_F9,
-    TH_F10,
+
+    // number/fn tap/hold buttons
+    TH_1,
+    TH_2,
+    TH_3,
+    TH_4,
+    TH_5,
+    TH_6,
+    TH_7,
+    TH_8,
+    TH_9,
+    TH_0,
     TH_LAST,
+
+    // normal macros
+    MM_1,
     MM_2,
-    DM_CLEAR,
+    MM_3,
+    MM_4,
+    DM_CLR,
     DYNAMIC_MACRO_RANGE,
 };
 
@@ -79,24 +58,24 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 /* COLEMAK
  * .--------------------------------------------------------------------------------------------------------------------------------------.
- * | ESC    | 1      | 2      | 3      | 4      | 5      | M(0)   | M(1)   | DEL    | 6      | 7      | 8      | 9      | 0      | -      |
- * |--------+-/F1----+-/F2----+-/F3----+-/F4----+-/F5----+--------+--------+--------+-/F6----+-/F7----+-/F8----+-/F9----+-/F10---+--------|
- * | TAB    | Q      | W      | F      | P      | G      | M(2)   |  (FN)  | BKSP   | J      | L      | U      | Y      | ;      | =      |
+ * | `      | 1      | 2      | 3      | 4      | 5      | DM_1   | DM_2   | KC_DEL | 6      | 7      | 8      | 9      | 0      | -      |
+ * |--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------|
+ * | TAB    | Q      | W      | F      | P      | G      | MM_3   | MM_4   | BKSP   | J      | L      | U      | Y      | ;      | =      |
  * |--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+-----------------+--------|
- * | SHIFT  | A      | R      | S      | T      | D      | [      | ]      | ENTER  | H      | N      | E      | I      | O      | '      |
+ * | SHIFT  | A      | R      | S      | T      | D      | [      | GOTO_FN| ENTER  | H      | N      | E      | I      | O      | '      |
  * |--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------------------------+--------|
- * | CTRL   | Z      | X      | C      | V      | B      | HOME   | END    | PG UP  | K      | M      | ,      | .      | /      | \      |
- * |--------+--------+--------+--------+--------+-----------------+--------+--------+--------+--------+-----------------+--------+--------|
- * | VOL-   | PLAY   | VOL+   | ALT    | GUI    |          SPACE           | PG DN  | MENU   | ESC    | LEFT   | DOWN   | UP     | RIGHT  |
+ * | CTRL   | Z      | X      | C      | V      | B      | ]      | PG UP  | /      | K      | M      | ,      | .      | UP     | \      |
+ * |--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+-----------------+--------+--------|
+ * | VOL-   | PLAY   | VOL+   | ALT    | GUI    | SPACE  | HOME   | PG DN  | END    | SPACE  | ESC    | MENU   | LEFT   | DOWN   | RIGHT  |
  * '--/RRND----/MUTE----/FFWD-------------------------------------------------------------------------------------------------------------'
  */
 
   [LAYER_COLEMAK] = KEYMAP(
-    KC_GRV, TH_F1, TH_F2, TH_F3, TH_F4, TH_F5,  MM_0,    MM_1,    KC_DEL,  TH_F6, TH_F7,  TH_F8,   TH_F9,   TH_F10,  KC_MINS,
-    KC_TAB, KC_Q,  KC_W,  KC_F,  KC_P,  KC_G,   MM_2,    GOTO_FN, KC_BSPC, KC_J,  KC_L,   KC_U,    KC_Y,    KC_SCLN, KC_EQL,
-    OSCTL,  KC_A,  KC_R,  KC_S,  KC_T,  KC_D,   KC_LBRC, KC_RBRC, KC_ENT,  KC_H,  KC_N,   KC_E,    KC_I,    KC_O,    KC_QUOT,
-    OSSFT,  KC_Z,  KC_X,  KC_C,  KC_V,  KC_B,   KC_HOME, KC_END,  KC_PGUP, KC_K,  KC_M,   KC_COMM, KC_DOT,  KC_SLSH, KC_BSLS,
-    TH_M0,  TH_M1,  TH_M2, OSALT, OSGUI, _____ , KC_SPC,  _____ ,  KC_PGDN, MMENU, KC_ESC, KC_LEFT, KC_DOWN, KC_UP,   KC_RGHT
+     KC_GRV , TH_1   , TH_2   , TH_3   , TH_4   , TH_5   , DM_1   , DM_2   , KC_DEL , TH_6   , TH_7   , TH_8   , TH_9   , TH_0   , KC_MINS,
+     KC_TAB , KC_Q   , KC_W   , KC_F   , KC_P   , KC_G   , MM_3   , MM_4   , KC_BSPC, KC_J   , KC_L   , KC_U   , KC_Y   , KC_SCLN, KC_EQL ,
+     STK_SHFT,KC_A   , KC_R   , KC_S   , KC_T   , KC_D   , KC_LBRC, GOTO_FN, KC_ENT , KC_H   , KC_N   , KC_E   , KC_I   , KC_O   , KC_QUOT,
+     STK_CTL, KC_Z   , KC_X   , KC_C   , KC_V   , KC_B   , KC_RBRC, KC_PGUP, KC_SLSH, KC_K   , KC_M   , KC_COMM, KC_DOT , KC_UP  , KC_BSLS,
+     TH_M0  , TH_M1  , TH_M2  , STK_ALT, STK_GUI, KC_SPC,  KC_HOME, KC_PGDN, KC_END , KC_SPC , KC_ESC , MMENU  , KC_LEFT, KC_DOWN, KC_RGHT
   ),
 
 /* DYN_REC LAYER - recording tap/hold keys is possible, but they will always "tap" (macros don't record holding duration)
@@ -105,90 +84,136 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  * |--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+-----------------|
  * |        |        |        |        |        |        |  STOP  |  STOP  |        |        |        |        |        |        |        |
  * |--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+-----------------+--------|
- * |        |        |        |        |        |        |        |        |        |        |        |        |        |        |        |
+ * |        |        |        |        |        |        |        |  STOP  |        |        |        |        |        |        |        |
  * |--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------------------------+--------|
  * |        |        |        |        |        |        |        |        |        |        |        |        |        |        |        |
- * |--------+--------+--------+--------+--------+-----------------+--------+--------+--------+--------+-----------------+--------+--------|
- * |        |        |        |        |        |                          |        |        |        |        |        |        |        |
+ * |--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------|
+ * |        |        |        |        |        |        |        |        |        |        |        |        |        |        |        |
  * '--------------------------------------------------------------------------------------------------------------------------------------'
  */
 
-  [LAYER_RECORD] = KEYMAP(
-    _____, _____, _____, _____, _____, _____, DYN_REC_STOP, DYN_REC_STOP, _____, _____, _____, _____, _____, _____, _____,
-    _____, _____, _____, _____, _____, _____, DYN_REC_STOP, DYN_REC_STOP, _____, _____, _____, _____, _____, _____, _____,
-    _____, _____, _____, _____, _____, _____,    _____,        _____,     _____, _____, _____, _____, _____, _____, _____,
-    _____, _____, _____, _____, _____, _____,    _____,        _____,     _____, _____, _____, _____, _____, _____, _____,
-    _____, _____, _____, _____, _____, _____,    _____,        _____,     _____, _____, _____, _____, _____, _____, _____
+  [LAYER_RECORD_CM] = KEYMAP(
+     ______ , ______ , ______ , ______ , ______ , ______ ,  STOP  ,  STOP  , ______ , ______ , ______ , ______ , ______ , ______ , ______ ,
+     ______ , ______ , ______ , ______ , ______ , ______ ,  STOP  ,  STOP  , ______ , ______ , ______ , ______ , ______ , ______ , ______ ,
+     ______ , ______ , ______ , ______ , ______ , ______ , ______ ,  STOP  , ______ , ______ , ______ , ______ , ______ , ______ , ______ ,
+     ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ ,
+     ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______
   ),
 
-/* QWERTY - doesn't support recording of macros, btw.  Falls through to colemak for most keys, but passes through the recording layer, so heads up.
+/* QWERTY - Falls through to colemak for most keys, but passes through the colemak recording layer, so that's why those keys are re-defined.
  * .--------------------------------------------------------------------------------------------------------------------------------------.
- * |        |        |        |        |        |        | M(0)   | M(1)   |        |        |        |        |        |        |        |
+ * |        |        |        |        |        |        | DM_1   | DM_2   |        |        |        |        |        |        |        |
  * |--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+-----------------|
- * |        | Q      | W      | E      | R      | T      | M(2)   |  (FN)  |        | Y      | U      | I      | O      | P      |        |
+ * |        | Q      | W      | E      | R      | T      | MM_3   | MM_4   |        | Y      | U      | I      | O      | P      |        |
  * |--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+-----------------+--------|
- * | SHIFT  | A      | S      | D      | F      | G      |        |        |        | H      | J      | K      | L      | ;      |        |
+ * | SHIFT  | A      | S      | D      | F      | G      |        | GOTO_FN|        | H      | J      | K      | L      | ;      |        |
  * |--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------------------------+--------|
  * | CTRL   | Z      | X      | C      | V      | B      |        |        |        | N      | M      |        |        |        |        |
- * |--------+--------+--------+--------+--------+-----------------+--------+--------+--------+--------+-----------------+--------+--------|
- * |        |        |        | ALT    | GUI    |                          |        |        |        |        |        |        |        |
+ * |--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------|
+ * |        |        |        | ALT    | GUI    |        |        |        |        |        |        |        |        |        |        |
  * '--------------------------------------------------------------------------------------------------------------------------------------'
  */
 
   [LAYER_QWERTY] = KEYMAP(
-    _____,    _____, _____, _____,    _____,    _____,    MM_0,  MM_1,    _____, _____, _____, _____, _____, _____, _____,
-    _____,    KC_Q,  KC_W,  KC_E,     KC_R,     KC_T,     MM_2,  GOTO_FN, _____, KC_Y,  KC_U, KC_I,  KC_O,  KC_P,    _____,
-    MOD_LSFT, KC_A,  KC_S,  KC_D,     KC_F,     KC_G,     _____,  _____,  _____, KC_H,  KC_J, KC_K,  KC_L,  KC_SCLN, _____,
-    MOD_LCTL, KC_Z,  KC_X,  KC_C,     KC_V,     KC_B,     _____,  _____,  _____, KC_N,  KC_M, _____, _____, _____,   _____,
-    _____,    _____, _____, MOD_LALT, MOD_LGUI, _____, _____,  _____,  _____, _____, _____, _____, _____, _____, _____
+     ______ , ______ , ______ , ______ , ______ , ______ , DM_1   , DM_2   , ______ , ______ , ______ , ______ , ______ , ______ , ______ ,
+     ______ , KC_Q   , KC_W   , KC_E   , KC_R   , KC_T   , MM_3   , MM_4   , ______ , KC_Y   , KC_U   , KC_I   , KC_O   , KC_P   , ______ ,
+     MLSFT  , KC_A   , KC_S   , KC_D   , KC_F   , KC_G   , ______ , GOTO_FN, ______ , KC_H   , KC_J   , KC_K   , KC_L   , KC_SCLN, ______ ,
+     MLCTL  , KC_Z   , KC_X   , KC_C   , KC_V   , KC_B   , ______ , ______ , ______ , KC_N   , KC_M   , ______ , ______ , ______ , ______ ,
+     ______ , ______ , ______ , MLALT  , MLGUI  , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______
+  ),
+
+  [LAYER_RECORD_QW] = KEYMAP(
+     ______ , ______ , ______ , ______ , ______ , ______ ,  STOP  ,  STOP  , ______ , ______ , ______ , ______ , ______ , ______ , ______ ,
+     ______ , ______ , ______ , ______ , ______ , ______ ,  STOP  ,  STOP  , ______ , ______ , ______ , ______ , ______ , ______ , ______ ,
+     ______ , ______ , ______ , ______ , ______ , ______ , ______ ,  STOP  , ______ , ______ , ______ , ______ , ______ , ______ , ______ ,
+     ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ ,
+     ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______ , ______
   ),
 
 /* FN LAYER - change layouts and start recording a macro
  * .--------------------------------------------------------------------------------------------------------------------------------------.
- * | COLEMAK| QWERTY |        |        |        |        | REC 1  | REC 2  |        |        |        |        |        |        |        |
+ * | KC_SLEP|        |        |        |        |        | REC 1  | REC 2  |        |        |        |        |        |        |        |
  * |--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+-----------------|
- * |        |        |        |        |        |        |        | ------ |        |        |        |        |        |        |        |
+ * |        |        |        |        |        |        |COLEMAK | QWERTY |        |        |        |        |        |        |        |
  * |--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+-----------------+--------|
- * |        |        |        |        |        |        |        |        |        |        |        |        |        |        |        |
+ * |        |        |        |        |        |        |        | GOTO_FN|        |        |        |        |        |        |        |
  * |--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------------------------+--------|
  * |        |        |        |        |        |        |        |        |        |        |        |        |        |        |        |
- * |--------+--------+--------+--------+--------+-----------------+--------+--------+--------+--------+-----------------+--------+--------|
- * |        |        |        |        | RESET  |         DM_CLEAR         |        |        | RESET  |        |        |        |        |
+ * |--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------|
+ * |        |        |        |        |DM_CLR  |        |        |        |        |        | RESET  |        |        |        |        |
  * '--------------------------------------------------------------------------------------------------------------------------------------'
  */
 
   [LAYER_FN] = KEYMAP(
-    GOTO_CM, GOTO_QW, KC_NO, KC_NO, KC_NO, KC_NO, DYN_REC_START1, DYN_REC_START2, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
-    KC_NO,   KC_NO,   KC_NO, KC_NO, KC_NO, KC_NO,     KC_NO,          KC_NO,      KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
-    KC_NO,   KC_NO,   KC_NO, KC_NO, KC_NO, KC_NO,     KC_NO,          KC_NO,      KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
-    KC_NO,   KC_NO,   KC_NO, KC_NO, KC_NO, KC_NO,     KC_NO,          KC_NO,      KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
-    KC_NO,   KC_NO,   KC_NO, KC_NO, RESET,    KC_NO, DM_CLEAR, KC_NO,             KC_NO, KC_NO, RESET, KC_NO, KC_NO, KC_NO, KC_NO
+     KC_SLEP, KC_NO  , KC_NO  , KC_NO  , KC_NO  ,  KC_NO , REC1   , REC2   , KC_NO  , KC_NO  , KC_NO  , KC_NO  , KC_NO  , KC_NO  , KC_NO ,
+     KC_NO  , KC_NO  , KC_NO  , KC_NO  , KC_NO  ,  KC_NO , GOTO_CM, GOTO_QW, KC_NO  , KC_NO  , KC_NO  , KC_NO  , KC_NO  , KC_NO  , KC_NO  ,
+     KC_NO  , KC_NO  , KC_NO  , KC_NO  , KC_NO  ,  KC_NO , KC_NO  , GOTO_FN, KC_NO  , KC_NO  , KC_NO  , KC_NO  , KC_NO  , KC_NO  , KC_NO  ,
+     KC_NO  , KC_NO  , KC_NO  , KC_NO  , KC_NO  ,  KC_NO , KC_NO  , KC_NO  , KC_NO  , KC_NO  , KC_NO  , KC_NO  , KC_NO  , KC_NO  , KC_NO  ,
+     KC_NO  , KC_NO  , KC_NO  , KC_NO  , DM_CLR ,  KC_NO , KC_NO  , KC_NO  , KC_NO  , KC_NO  , RESET  , KC_NO  , KC_NO  , KC_NO  , KC_NO
   )
 };
 
-typedef struct {
-    bool is_pressed;
-    uint16_t timer;
-    uint16_t kc_tap;
-    uint16_t kc_hold;
-} tap_hold_t;
+///
+/// GLOBAL STATE VARS
+///
 
+/// previous layer refers to either QWERTY or Colemak; it is stored when going
+/// to the function layer, and restored after a macro recording
+static uint32_t prev_layer;
+
+/// Tap hold events - make sure the number of events matches TH_EVENTS_COUNT, and the TH_M0 ... TH_0
+/// keys must be sequential and in the same order.
 static tap_hold_t th_events[] = {
     { .is_pressed = false, .timer = 0, .kc_tap = KC_VOLD, .kc_hold = KC_MRWD }, // TH_M0
     { .is_pressed = false, .timer = 0, .kc_tap = KC_MPLY, .kc_hold = KC_MUTE }, // TH_M1
     { .is_pressed = false, .timer = 0, .kc_tap = KC_VOLU, .kc_hold = KC_MFFD }, // TH_M2
 
-    { .is_pressed = false, .timer = 0, .kc_tap = KC_1, .kc_hold = KC_F1 }, // TH_F1
-    { .is_pressed = false, .timer = 0, .kc_tap = KC_2, .kc_hold = KC_F2 }, // TH_F2
-    { .is_pressed = false, .timer = 0, .kc_tap = KC_3, .kc_hold = KC_F3 }, // TH_F3
-    { .is_pressed = false, .timer = 0, .kc_tap = KC_4, .kc_hold = KC_F4 }, // TH_F4
-    { .is_pressed = false, .timer = 0, .kc_tap = KC_5, .kc_hold = KC_F5 }, // TH_F5
-    { .is_pressed = false, .timer = 0, .kc_tap = KC_6, .kc_hold = KC_F6 }, // TH_F6
-    { .is_pressed = false, .timer = 0, .kc_tap = KC_7, .kc_hold = KC_F7 }, // TH_F7
-    { .is_pressed = false, .timer = 0, .kc_tap = KC_8, .kc_hold = KC_F8 }, // TH_F8
-    { .is_pressed = false, .timer = 0, .kc_tap = KC_9, .kc_hold = KC_F9 }, // TH_F9
-    { .is_pressed = false, .timer = 0, .kc_tap = KC_0, .kc_hold = KC_F10 } // TH_F10
+    { .is_pressed = false, .timer = 0, .kc_tap = KC_1, .kc_hold = KC_F1 }, // TH_1
+    { .is_pressed = false, .timer = 0, .kc_tap = KC_2, .kc_hold = KC_F2 }, // TH_2
+    { .is_pressed = false, .timer = 0, .kc_tap = KC_3, .kc_hold = KC_F3 }, // TH_3
+    { .is_pressed = false, .timer = 0, .kc_tap = KC_4, .kc_hold = KC_F4 }, // TH_4
+    { .is_pressed = false, .timer = 0, .kc_tap = KC_5, .kc_hold = KC_F5 }, // TH_5
+    { .is_pressed = false, .timer = 0, .kc_tap = KC_6, .kc_hold = KC_F6 }, // TH_6
+    { .is_pressed = false, .timer = 0, .kc_tap = KC_7, .kc_hold = KC_F7 }, // TH_7
+    { .is_pressed = false, .timer = 0, .kc_tap = KC_8, .kc_hold = KC_F8 }, // TH_8
+    { .is_pressed = false, .timer = 0, .kc_tap = KC_9, .kc_hold = KC_F9 }, // TH_9
+    { .is_pressed = false, .timer = 0, .kc_tap = KC_0, .kc_hold = KC_F10 } // TH_0
 };
+
+/// RGB KEYS
+/// Store an rgblight_fadeout for each LED; these are turned on and fade out after every key press
+static rgblight_fadeout lights[RGBLED_NUM];
+static bool rgb_animations = true;
+
+/// STICKY KEYS
+// sticky key state - bit masks of MOD_BIT(KC_LCTL) | MOD_BIT(KC_LALT) | ...
+// sticky_lock - same but stays on - double tap to activate
+static uint8_t sticky_state = 0;
+static uint8_t sticky_lock = 0;
+static uint16_t sticky_timer;
+// actual "mod key pressed" state, which "overrides" the sticky state. "Sticky"
+// state only lasts for one key press, but as long as the modifier key is held
+// it will also continue to be active.
+static uint8_t mods_down_state = 0;
+
+/// DYNAMIC MACROS
+// if the dynamic macros haven't been recorded, send default macro strings.
+static bool did_record_m1 = false;
+static bool did_record_m2 = false;
+
+void matrix_init_user(void) {
+    rgblight_mode(1);
+    rgblight_setrgb(0, 0, 0);
+    rgblight_enable();
+    gp103_led_on();
+    _delay_ms(250);
+    gp103_led_off();
+
+    for (uint8_t light_index = 0 ; light_index < RGBLED_NUM ; ++light_index ) {
+        rgblight_fadeout *light = &lights[light_index];
+        light->enabled = false;
+    }
+}
 
 void taphold_tapped(uint8_t index, bool pressed) {
     if (index >= TH_EVENTS_COUNT) { return; }
@@ -205,7 +230,12 @@ void taphold_tapped(uint8_t index, bool pressed) {
     }
 }
 
-void matrix_scan_user() {
+void matrix_scan_user(void) {
+    scan_tap_hold();
+    scan_rgblight_fadeout();
+}
+
+void scan_tap_hold(void) {
     for (uint8_t index = 0 ; index < TH_EVENTS_COUNT ; ++index ) {
         tap_hold_t *th_event = &th_events[index];
         if ( th_event->is_pressed && timer_elapsed(th_event->timer) > LONGPRESS_DELAY) {
@@ -216,53 +246,276 @@ void matrix_scan_user() {
     }
 }
 
-// if the dynamic macros haven't been recorded, we send the default macro strings.
-bool did_record_m1 = false;
-bool did_record_m2 = false;
+void scan_rgblight_fadeout(void) {
+    if (!rgb_animations) { return; }
+
+    bool litup = false;
+    for (uint8_t light_index = 0 ; light_index < RGBLED_NUM ; ++light_index ) {
+        if (lights[light_index].enabled && timer_elapsed(lights[light_index].timer) > 10) {
+            rgblight_fadeout *light = &lights[light_index];
+            rgblight_setrgb_at(light->r, light->g, light->b, light_index);
+            litup = true;
+
+            if (light->r || light->g || light->b) {
+                light->life -= 1;
+                light->r = light->r ? light->r - 1 : light->r;
+                light->g = light->g ? light->g - 1 : light->g;
+                light->b = light->b ? light->b - 1 : light->b;
+                light->timer = timer_read();
+            }
+            else {
+                light->enabled = false;
+            }
+        }
+    }
+
+    if (litup) {
+        rgblight_set();
+    }
+}
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-    bool try_dynamic_macro = true;
-    if ((keycode == DYN_MACRO_PLAY1 && !did_record_m1) || (keycode == DYN_MACRO_PLAY2 && !did_record_m2)) {
-        try_dynamic_macro = false;
-    }
-    else if (keycode == DM_CLEAR) {
-        try_dynamic_macro = false;
-        did_record_m1 = false;
-        did_record_m2 = false;
+    if (keycode == RESET) {
+        rgblight_setrgb(0xFF, 0xFF, 0);
+        gp103_led_on();
+        return KBD_CONTINUE;
     }
 
-    if (try_dynamic_macro && !process_record_dynamic_macro(keycode, record)) {
-        if (keycode == DYN_MACRO_PLAY1) {
-                did_record_m1 = true;
-        }
-
-        if (keycode == DYN_MACRO_PLAY2) {
-                did_record_m2 = true;
-        }
-
-        if (keycode == DYN_REC_START1 || keycode == DYN_REC_START2) {
-                layer_move(LAYER_RECORD);
-        }
-        else if (keycode == DYN_REC_STOP) {
-                layer_move(LAYER_COLEMAK);
-        }
-
-        return false;
+    if (KBD_HALT == process_record_user_rgb(keycode, record) ||
+        KBD_HALT == process_record_user_fnlayer(keycode, record) ||
+        KBD_HALT == process_record_user_sticky(keycode, record) ||
+        KBD_HALT == process_record_user_taphold(keycode, record) ||
+        KBD_HALT == process_record_user_dyn_macro(keycode, record) ||
+        KBD_HALT == process_record_user_macro(keycode, record) ||
+        false)
+    {
+        return KBD_HALT;
     }
+
+    return KBD_CONTINUE;
+}
+
+bool process_record_user_rgb(uint16_t keycode, keyrecord_t *record) {
+    if (!record->event.pressed) { return KBD_CONTINUE; }
 
     switch (keycode) {
-    case DYN_MACRO_PLAY1:
-        SEND_STRING(SENDSTRING_MM0);
-        return false;
-    case DYN_MACRO_PLAY2:
-        SEND_STRING(SENDSTRING_MM1);
-        return false;
-    case MM_2:
-        SEND_STRING(SENDSTRING_MM2);
-        return false;
-    case TH_M0 ... TH_LAST:
-        taphold_tapped(keycode - TH_M0, record->event.pressed);
-        return false;
+    case KC_A ... KC_SLASH:
+    case KC_F1 ... KC_F12:
+    case KC_INSERT ... KC_UP:
+    case KC_KP_SLASH ... KC_KP_DOT:
+    case KC_F13 ... KC_F24:
+    case KC_AUDIO_MUTE ... KC_MEDIA_REWIND:
+        start_rgb_light();
     }
 
-    return true;
+    return KBD_CONTINUE;
+}
+
+void start_rgb_light(void) {
+    uint8_t indices[RGBLED_NUM];
+    uint8_t indices_count = 0;
+    uint8_t min_life = 0xFF;
+    uint8_t min_life_index = -1;
+    for (uint8_t index = 0 ; index < RGBLED_NUM ; ++index ) {
+        if (lights[index].enabled) {
+            if (min_life_index == -1 ||
+                lights[index].life < min_life)
+            {
+                min_life = lights[index].life;
+                min_life_index = index;
+            }
+            continue;
+        }
+
+        indices[indices_count] = index;
+        ++indices_count;
+    }
+
+    uint8_t light_index;
+    if (!indices_count) {
+        light_index = min_life_index;
+    }
+    else {
+        light_index = indices[rand() % indices_count];
+    }
+
+    rgblight_fadeout *light = &lights[light_index];
+    light->enabled = true;
+    light->timer = timer_read();
+    light->life = 0xFF;
+
+    light->r = rand() % 0xFF;
+    light->g = rand() % 0xFF;
+    light->b = rand() % 0xFF;
+
+    rgblight_setrgb_at(light->r, light->g, light->b, light_index);
+}
+
+bool process_record_user_fnlayer(uint16_t keycode, keyrecord_t *record) {
+    if (keycode == GOTO_FN) {
+        sticky_state = 0;
+        sticky_lock = 0;
+        gp100_led_off();
+
+        if (layer_state_is(LAYER_COLEMAK) || layer_state_is(LAYER_QWERTY)) {
+            prev_layer = layer_state;
+        }
+    }
+    return KBD_CONTINUE;
+}
+
+bool process_record_user_sticky(uint16_t keycode, keyrecord_t *record) {
+    uint8_t modkey = 0;
+    switch (keycode) {
+    case STK_CTL:
+        modkey = KC_LCTL;
+        break;
+    case STK_ALT:
+        modkey = KC_LALT;
+        break;
+    case STK_SHFT:
+        modkey = KC_LSHIFT;
+        break;
+    case STK_GUI:
+        modkey = KC_LGUI;
+        break;
+    default:
+        sticky_state = 0;
+        break;
+    }
+
+    if (!modkey) { return KBD_CONTINUE; }
+
+    uint8_t modkey_mask = MOD_BIT(modkey);
+    if (record->event.pressed) {
+        register_code(modkey);
+
+        if (sticky_lock & modkey_mask) {
+            sticky_state &= ~modkey_mask;
+            sticky_lock  &= ~modkey_mask;
+            gp100_led_on();
+        }
+        else if (sticky_state & modkey_mask) {
+            if (timer_elapsed(sticky_timer) < STICKY_DELAY) {
+                sticky_lock |= modkey_mask;
+                gp100_led_on();
+            }
+            else {
+                sticky_state &= ~modkey_mask;
+                gp100_led_on();
+            }
+        }
+        else {
+            sticky_state |= modkey_mask;
+            sticky_timer = timer_read();
+        }
+
+        mods_down_state |= modkey_mask;
+    }
+    else {
+        unregister_code(modkey);
+
+        mods_down_state &= ~modkey_mask;
+
+        if (!(mods_down_state | sticky_lock)) {
+            gp100_led_off();
+        }
+    }
+
+    set_mods(mods_down_state | sticky_state | sticky_lock);
+
+    return KBD_HALT;
+}
+
+bool process_record_user_taphold(uint16_t keycode, keyrecord_t *record) {
+    switch (keycode) {
+    case TH_M0 ... TH_LAST:
+        taphold_tapped(keycode - TH_M0, record->event.pressed);
+        return KBD_HALT;
+    }
+    return KBD_CONTINUE;
+}
+
+bool process_record_user_dyn_macro(uint16_t keycode, keyrecord_t *record) {
+    if (keycode == DM_CLR) {
+        did_record_m1 = false;
+        did_record_m2 = false;
+        return KBD_CONTINUE;
+    }
+
+    if ((keycode == DM_1 && !did_record_m1) || (keycode == DM_2 && !did_record_m2)) { return KBD_CONTINUE; }
+    if (process_record_dynamic_macro(keycode, record)) { return KBD_CONTINUE; }
+
+    if (keycode == DYN_REC_START1) {
+        did_record_m1 = true;
+    }
+
+    if (keycode == DYN_REC_START2) {
+        did_record_m2 = true;
+    }
+
+    if (keycode == DYN_REC_START1 || keycode == DYN_REC_START2) {
+        gp103_led_on();
+        if (layer_state_cmp(prev_layer, LAYER_COLEMAK)) {
+            layer_move(LAYER_RECORD_CM);
+        }
+        else if (layer_state_cmp(prev_layer, LAYER_QWERTY)) {
+            layer_move(LAYER_RECORD_QW);
+        }
+    }
+    else if (keycode == DYN_REC_STOP) {
+        gp103_led_off();
+        layer_move(prev_layer);
+    }
+
+    return KBD_HALT;
+}
+
+bool process_record_user_macro(uint16_t keycode, keyrecord_t *record) {
+    if (!record->event.pressed) { return KBD_CONTINUE; }
+
+    switch (keycode) {
+    case DM_1: if (did_record_m1) { return KBD_HALT; }
+    case MM_1:
+        SEND_STRING(SENDSTRING_MM1);
+        return KBD_HALT;
+
+    case DM_2: if (did_record_m2) { return KBD_HALT; }
+    case MM_2:
+        SEND_STRING(SENDSTRING_MM2);
+        return KBD_HALT;
+
+    case MM_3:
+        SEND_STRING(SENDSTRING_MM3);
+        return KBD_HALT;
+    case MM_4:
+        SEND_STRING(SENDSTRING_MM4);
+        return KBD_HALT;
+    }
+
+    return KBD_CONTINUE;
+}
+
+void process_record_after(keyrecord_t *record) {
+    if (!sticky_state && get_mods()) {
+        set_mods(mods_down_state | sticky_lock);
+    }
+
+    if (layer_state_is(LAYER_FN)) {
+        rgb_animations = false;
+        rgblight_setrgb(0xFF, 0xFF, 0xFF);
+        keycaps_led_on();
+    }
+    else if (!rgb_animations) {
+        rgb_animations = true;
+        rgblight_setrgb(0, 0, 0);
+        keycaps_led_off();
+    }
+
+    if ((sticky_state | sticky_lock) > 0) {
+        capslock_led_on();
+    }
+    else {
+        capslock_led_off();
+    }
 }
