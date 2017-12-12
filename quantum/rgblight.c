@@ -50,12 +50,17 @@ struct locked_rgb_led
   int8_t r;
   int8_t g;
   int8_t b;
+  int8_t orig_r;
+  int8_t orig_g;
+  int8_t orig_b;
   struct locked_rgb_led *next;
 };
 struct locked_rgb_led* locked_rgb_leds = NULL;
 
 void add_locked_rgb_led(struct locked_rgb_led** head_ref, int8_t index, int8_t r, int8_t g, int8_t b)
 {
+
+  
   // Allocation
   struct locked_rgb_led* new_node = (struct locked_rgb_led*) malloc(sizeof(struct locked_rgb_led));
 
@@ -64,6 +69,12 @@ void add_locked_rgb_led(struct locked_rgb_led** head_ref, int8_t index, int8_t r
   new_node->r = r;
   new_node->g = g;
   new_node->b = b;
+  new_node->orig_r = led[index].r;
+  new_node->orig_g = led[index].g;
+  new_node->orig_b = led[index].b;
+
+  // Go ahead and set it.
+  rgblight_setrgb_at(r, g, b, index);
 
   // Make the new node point to the current first node
   new_node->next = (*head_ref);
@@ -101,6 +112,10 @@ void del_locked_rgb_led(struct locked_rgb_led **head_ref, int8_t index)
 
   // Found. Unlink and free.
   prev->next = temp->next;
+
+  // Go ahead and set it back
+  rgblight_setrgb_at(temp->orig_r, temp->orig_g, temp->orig_b, index);
+
   free(temp);
 }
 
@@ -123,7 +138,6 @@ void rgblight_lock_rgb_at(uint16_t r, uint8_t g, uint8_t b, uint8_t index)
   // Set the color of an LED and prevent it from being changed until unlocked.
   if (!is_locked_rgb_led(index))
   {
-    rgblight_setrgb_at(r, g, b, index);
     add_locked_rgb_led(&locked_rgb_leds, index, r, g, b);
   }
 }
@@ -134,9 +148,6 @@ void rgblight_unlock_rgb_at(uint8_t index)
   if (is_locked_rgb_led(index))
   {
     del_locked_rgb_led(&locked_rgb_leds, index);
-    // Turn it off for now. If it's an animated mode, it'll overwrite.
-    // We'll figure out preserving the original color for static modes later.
-    rgblight_setrgb_at(r, g, b, index); 
   }
 }
 
