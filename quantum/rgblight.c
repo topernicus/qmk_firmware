@@ -134,6 +134,9 @@ void rgblight_unlock_rgb_at(uint8_t index)
   if (is_locked_rgb_led(index))
   {
     del_locked_rgb_led(&locked_rgb_leds, index);
+    // Turn it off for now. If it's an animated mode, it'll overwrite.
+    // We'll figure out preserving the original color for static modes later.
+    rgblight_setrgb_at(r, g, b, index); 
   }
 }
 
