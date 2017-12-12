@@ -22,6 +22,8 @@
 #include "rgblight.h"
 #include "debug.h"
 #include "led_tables.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 __attribute__ ((weak))
 const uint8_t RGBLED_BREATHING_INTERVALS[] PROGMEM = {30, 20, 10, 5};
@@ -42,6 +44,98 @@ rgblight_config_t inmem_config;
 LED_TYPE led[RGBLED_NUM];
 uint8_t rgblight_inited = 0;
 bool rgblight_timer_enabled = false;
+struct locked_rgb_led
+{
+  int8_t index;
+  int8_t r;
+  int8_t g;
+  int8_t b;
+  struct locked_rgb_led *next;
+};
+struct locked_rgb_led* locked_rgb_leds = NULL;
+
+void add_locked_rgb_led(struct locked_rgb_led** head_ref, int8_t index, int8_t r, int8_t g, int8_t b)
+{
+  // Allocation
+  struct locked_rgb_led* new_node = (struct locked_rgb_led*) malloc(sizeof(struct locked_rgb_led));
+
+  // Add data
+  new_node->index = index;
+  new_node->r = r;
+  new_node->g = g;
+  new_node->b = b;
+
+  // Make the new node point to the current first node
+  new_node->next = (*head_ref);
+
+  // Make the new node the first node
+  (*head_ref) = new_node;
+}
+
+void del_locked_rgb_led(struct locked_rgb_led **head_ref, int8_t index)
+{
+  struct locked_rgb_led* temp = *head_ref, *prev;
+  prev = NULL;
+
+  // Check head node
+  if (temp != NULL && temp->index == index)
+  {
+    // Change head and free old head
+    *head_ref = temp->next;
+    free(temp);
+    return;
+  }
+
+  // Check other nodes
+  while (temp != NULL && temp->index != index)
+  {
+    prev = temp;
+    temp = temp->next;
+  }
+
+  if (temp == NULL)
+  {
+    // Not found
+    return;
+  }
+
+  // Found. Unlink and free.
+  prev->next = temp->next;
+  free(temp);
+}
+
+bool is_locked_rgb_led(int8_t index)
+{
+  // Cycle through and see if we have this LED locked.
+  while (locked_rgb_leds != NULL)
+  {
+    if (locked_rgb_leds->index == index)
+    {
+      return true;
+    }
+    locked_rgb_leds = locked_rgb_leds->next;
+  }
+  return false;
+}
+
+void rgblight_lock_rgb_at(uint16_t r, uint8_t g, uint8_t b, uint8_t index)
+{
+  // Set the color of an LED and prevent it from being changed until unlocked.
+  if (!is_locked_rgb_led(index))
+  {
+    rgblight_setrgb_at(r, g, b, index);
+    add_locked_rgb_led(&locked_rgb_leds, index, r, g, b);
+  }
+}
+
+void rgblight_unlock_rgb_at(uint8_t index)
+{
+  // Allow this LED to be changed again.
+  if (is_locked_rgb_led(index))
+  {
+    del_locked_rgb_led(&locked_rgb_leds, index);
+  }
+}
 
 void sethsv(uint16_t hue, uint8_t sat, uint8_t val, LED_TYPE *led1) {
   uint8_t r = 0, g = 0, b = 0, base, color;
@@ -401,6 +495,23 @@ void rgblight_sethsv_at(uint16_t hue, uint8_t sat, uint8_t val, uint8_t index) {
 #ifndef RGBLIGHT_CUSTOM_DRIVER
 void rgblight_set(void) {
   if (rgblight_config.enable) {
+    // RGB Lock Tinkering
+    for (uint8_t i = 0; i < RGBLED_NUM; i++) {
+      if (is_locked_rgb_led(i))
+      {
+        while (locked_rgb_leds != NULL)
+        {
+          if (locked_rgb_leds->index == i)
+          {
+            // This one is locked, so we'll put it back to it's locked color.
+            led[i].r = locked_rgb_leds->r;
+            led[i].g = locked_rgb_leds->g;
+            led[i].b = locked_rgb_leds->b;
+          }
+          locked_rgb_leds = locked_rgb_leds->next;
+        }
+      }
+    }
     #ifdef RGBW
       ws2812_setleds_rgbw(led, RGBLED_NUM);
     #else
