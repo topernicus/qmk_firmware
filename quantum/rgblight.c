@@ -58,9 +58,7 @@ struct locked_rgb_led
 struct locked_rgb_led* locked_rgb_leds = NULL;
 
 void add_locked_rgb_led(struct locked_rgb_led** head_ref, int8_t index, int8_t r, int8_t g, int8_t b)
-{
-
-  
+{ 
   // Allocation
   struct locked_rgb_led* new_node = (struct locked_rgb_led*) malloc(sizeof(struct locked_rgb_led));
 
@@ -87,13 +85,21 @@ void del_locked_rgb_led(struct locked_rgb_led **head_ref, int8_t index)
 {
   struct locked_rgb_led* temp = *head_ref, *prev;
   prev = NULL;
+  int8_t new_r = 0;
+  int8_t new_g = 0;
+  int8_t new_b = 0;
 
   // Check head node
   if (temp != NULL && temp->index == index)
   {
+    new_r = temp->orig_r;
+    new_g = temp->orig_g;
+    new_b = temp->orig_b;
+
     // Change head and free old head
     *head_ref = temp->next;
     free(temp);
+    rgblight_setrgb_at(new_r, new_g, new_b, index);    
     return;
   }
 
@@ -109,26 +115,29 @@ void del_locked_rgb_led(struct locked_rgb_led **head_ref, int8_t index)
     // Not found
     return;
   }
+  new_r = temp->orig_r;
+  new_g = temp->orig_g;
+  new_b = temp->orig_b;
 
   // Found. Unlink and free.
   prev->next = temp->next;
+  free(temp);
 
   // Go ahead and set it back
-  rgblight_setrgb_at(temp->orig_r, temp->orig_g, temp->orig_b, index);
-
-  free(temp);
+  rgblight_setrgb_at(new_r, new_g, new_b, index);  
 }
 
 bool is_locked_rgb_led(int8_t index)
 {
   // Cycle through and see if we have this LED locked.
-  while (locked_rgb_leds != NULL)
+  struct locked_rgb_led* current = locked_rgb_leds;
+  while (current != NULL)
   {
-    if (locked_rgb_leds->index == index)
+    if (current->index == index)
     {
       return true;
     }
-    locked_rgb_leds = locked_rgb_leds->next;
+    current = current->next;
   }
   return false;
 }
@@ -145,10 +154,7 @@ void rgblight_lock_rgb_at(uint16_t r, uint8_t g, uint8_t b, uint8_t index)
 void rgblight_unlock_rgb_at(uint8_t index)
 {
   // Allow this LED to be changed again.
-  if (is_locked_rgb_led(index))
-  {
     del_locked_rgb_led(&locked_rgb_leds, index);
-  }
 }
 
 void sethsv(uint16_t hue, uint8_t sat, uint8_t val, LED_TYPE *led1) {
@@ -509,22 +515,14 @@ void rgblight_sethsv_at(uint16_t hue, uint8_t sat, uint8_t val, uint8_t index) {
 #ifndef RGBLIGHT_CUSTOM_DRIVER
 void rgblight_set(void) {
   if (rgblight_config.enable) {
-    // RGB Lock Tinkering
-    for (uint8_t i = 0; i < RGBLED_NUM; i++) {
-      if (is_locked_rgb_led(i))
-      {
-        while (locked_rgb_leds != NULL)
-        {
-          if (locked_rgb_leds->index == i)
-          {
-            // This one is locked, so we'll put it back to it's locked color.
-            led[i].r = locked_rgb_leds->r;
-            led[i].g = locked_rgb_leds->g;
-            led[i].b = locked_rgb_leds->b;
-          }
-          locked_rgb_leds = locked_rgb_leds->next;
-        }
-      }
+    // Locked RGB Tinkering
+    struct locked_rgb_led* current = locked_rgb_leds;
+    while (current != NULL)
+    {
+      led[current->index].r = current->r;
+      led[current->index].g = current->g;
+      led[current->index].b = current->b;
+      current = current->next;
     }
     #ifdef RGBW
       ws2812_setleds_rgbw(led, RGBLED_NUM);
@@ -621,7 +619,6 @@ void rgblight_effect_breathing(uint8_t interval) {
     return;
   }
   last_timer = timer_read();
-
 
   // http://sean.voisen.org/blog/2011/10/breathing-led-with-arduino/
   val = (exp(sin((pos/255.0)*M_PI)) - RGBLIGHT_EFFECT_BREATHE_CENTER/M_E)*(RGBLIGHT_EFFECT_BREATHE_MAX/(M_E-1/M_E));

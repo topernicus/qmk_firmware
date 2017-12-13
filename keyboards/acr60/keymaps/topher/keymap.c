@@ -54,7 +54,7 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
           rgblight_unlock_rgb_at(2);
           rgblight_unlock_rgb_at(19);
         }
-        rgblight_set();
+        //rgblight_set();
       }
       break;
     case 1:
@@ -71,7 +71,7 @@ const macro_t *action_get_macro(keyrecord_t *record, uint8_t id, uint8_t opt)
         {
           rgblight_unlock_rgb_at(14);
         }
-        rgblight_set();
+        //rgblight_set();
       }
       break;
   }
