@@ -4,12 +4,14 @@
 
 enum custom_keycodes
 {
-  EMOJI_SHRUG,
-  EMOJI_FLIPTABLE,
-  EMOJI_FIXTABLE,
-  EMOJI_ANGRYTABLE,
+  SHRUG = SAFE_RANGE,
+  FUCKTHISONE,
+  FLPTBL,
+  FIXTBL,
+  NGRYTBL,
+  SRSLY,
   EMOJI_LENNY,
-  EMOJI_LENNYX
+  EMOJI_LENNYX,
 };
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -28,7 +30,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 	KEYMAP_DIRECTIONAL(
 		KC_GRV, KC_F1, KC_F2, KC_F3, KC_F4, KC_F5, KC_F6, KC_F7, KC_F8, KC_F9, KC_F10, KC_F11, KC_F12, KC_TRNS, KC_DEL,
 		KC_TRNS, RGB_TOG, RGB_MOD, RGB_HUI, RGB_HUD, RGB_SAI, RGB_SAD, RGB_VAI, RGB_VAD, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, RESET,
-		KC_TRNS, EMOJI_SHRUG, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
+		KC_TRNS, SHRUG, FLPTBL, FIXTBL, NGRYTBL, SRSLY, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
 		KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, BL_DEC, BL_TOGG, BL_INC, BL_STEP, KC_MUTE, KC_VOLD, KC_VOLU, KC_TRNS, KC_PGUP, KC_INS,
 		KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_HOME, KC_PGDN, KC_END),
 
@@ -90,18 +92,74 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             send_keyboard_report();
             toggle_mute_indicator();
             return false; break;
-          case EMOJI_SHRUG:
-            SEND_STRING(R"(¯\_(ツ)_/¯)");
+          case SHRUG:
+            process_unicode((0x00AF|QK_UNICODE), record); // hand
+            SEND_STRING("\\"); // escape
+            process_unicode((0x005C|QK_UNICODE), record); // arm
+            SEND_STRING("\\"); // escape
+            process_unicode((0x005F|QK_UNICODE), record); // shoulder
+            process_unicode((0x0028|QK_UNICODE), record); // left head
+            process_unicode((0x30C4|QK_UNICODE), record); // face
+            process_unicode((0x0029|QK_UNICODE), record); // right head
+            SEND_STRING("\\"); // escape
+            process_unicode((0x005F|QK_UNICODE), record); // shoulder
+            process_unicode((0x002F|QK_UNICODE), record); // arm
+            process_unicode((0x00AF|QK_UNICODE), record); // hand
+            //SEND_STRING(R"(¯\_(ツ)_/¯)");
             return false; break;
-          // case EMOJI_FLIPTABLE:
-          //   SEND_STRING(R"((╯°□°）╯︵ ┻━┻)");
-          //   return false; break;
-          // case EMOJI_FIXTABLE:
-          //   SEND_STRING(R"(┬─┬ノ( º _ ºノ))");
-          //   return false; break;
-          // case EMOJI_ANGRYTABLE:
-          //   SEND_STRING(R"((ノಠ益ಠ)ノ彡┻━┻)");
-          //   return false; break;
+          case FLPTBL:
+            process_unicode((0x0028|QK_UNICODE), record); // head
+            process_unicode((0x256F|QK_UNICODE), record); // arm
+            process_unicode((0x00B0|QK_UNICODE), record); // eye
+            process_unicode((0x25A1|QK_UNICODE), record); // mouth
+            process_unicode((0x00B0|QK_UNICODE), record); // eye
+            process_unicode((0x0029|QK_UNICODE), record); // head
+            process_unicode((0x256F|QK_UNICODE), record); // arm
+            //process_unicode((0x09F2|QK_UNICODE), record); // flip
+            register_code(KC_RALT);
+            SEND_STRING(SS_TAP(X_KP_PLUS) SS_TAP(X_F) SS_TAP(X_E) SS_TAP(X_KP_3) SS_TAP(X_KP_5));
+            unregister_code(KC_RALT);
+            process_unicode((0x0020|QK_UNICODE), record); // space
+            process_unicode((0x253B|QK_UNICODE), record); // table
+            process_unicode((0x2501|QK_UNICODE), record); // table
+            process_unicode((0x253B|QK_UNICODE), record); // table
+            //SEND_STRING(R"((╯°□°）╯︵ ┻━┻)");
+            return false; break;
+          case FIXTBL:
+            process_unicode((0x252C|QK_UNICODE), record); // table
+            process_unicode((0x2500|QK_UNICODE), record); // table
+            process_unicode((0x252C|QK_UNICODE), record); // table
+            process_unicode((0x30CE|QK_UNICODE), record); // arm
+            process_unicode((0x0028|QK_UNICODE), record); // head
+            process_unicode((0x0020|QK_UNICODE), record); // space
+            process_unicode((0x00BA|QK_UNICODE), record); // eye
+            process_unicode((0x0020|QK_UNICODE), record); // space
+            process_unicode((0x005F|QK_UNICODE), record); // mouth
+            process_unicode((0x0020|QK_UNICODE), record); // space
+            process_unicode((0x00BA|QK_UNICODE), record); // eye
+            process_unicode((0x30CE|QK_UNICODE), record); // arm
+            process_unicode((0x0029|QK_UNICODE), record); // head
+            //SEND_STRING(R"(┬─┬ノ( º _ ºノ))");
+            return false; break;
+          case NGRYTBL:
+            process_unicode((0x0028|QK_UNICODE), record); // head
+            process_unicode((0x30CE|QK_UNICODE), record); // arm
+            process_unicode((0x0CA0|QK_UNICODE), record); // eye
+            process_unicode((0x76CA|QK_UNICODE), record); // mouth
+            process_unicode((0x0CA0|QK_UNICODE), record); // eye
+            process_unicode((0x0029|QK_UNICODE), record); // head
+            process_unicode((0x30CE|QK_UNICODE), record); // arm
+            process_unicode((0x5F61|QK_UNICODE), record); // whoosh
+            process_unicode((0x253B|QK_UNICODE), record); // table
+            process_unicode((0x2501|QK_UNICODE), record); // table
+            process_unicode((0x253B|QK_UNICODE), record); // table
+            //SEND_STRING(R"((ノಠ益ಠ)ノ彡┻━┻)");
+            return false; break;
+          case SRSLY:
+            process_unicode((0x0CA0|QK_UNICODE), record); // eye
+            process_unicode((0x005F|QK_UNICODE), record); // mouth
+            process_unicode((0x0CA0|QK_UNICODE), record); // eye
+            return false; break;
           // case EMOJI_LENNY:
           //   SEND_STRING(R"(( ͡° ͜ʖ ͡°))");
           //   return false; break;
